@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import re
 
+# Dashboard setup
+pd.set_option("display.max_colwidth", None)
 st.set_page_config(
     page_title="Taiwan Waste Management Data", page_icon="🗑️", layout="wide"
 )
@@ -70,9 +72,10 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-st.write((metadata["資料集描述"]).to_string(index=False, header=False))
+data_description = metadata["資料集描述"].to_string(index=False, header=False)
+st.write(data_description)
 compost_data = get_cleaned_compost_data(data)
-st.subheader("Compost Data Over Time")
+st.subheader("Compost Data Over Time 廚餘量 (mt 公噸)")
 st.line_chart(data=compost_data, x="日期", y="廚餘量")
 
 fig1, fig2 = st.columns(2)
