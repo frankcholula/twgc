@@ -6,7 +6,7 @@ import re
 # Dashboard setup
 pd.set_option("display.max_colwidth", None)
 st.set_page_config(
-    page_title="Taiwan Waste Management Data", page_icon="🗑️", layout="wide"
+    page_title="Taiwan Waste Management Data", page_icon="🗑️", layout="centered"
 )
 
 st.title("🚚 Taiwan Waste Management Data")
@@ -75,7 +75,7 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
 data_description = metadata["資料集描述"].to_string(index=False, header=False)
 st.write(data_description)
 compost_data = get_cleaned_compost_data(data)
-st.subheader("Compost Data Over Time 廚餘量")
+st.markdown("## Compost Data Over Time 廚餘量")
 st.line_chart(data=compost_data, x="日期", y="廚餘量")
 
 # compost data by months
@@ -85,14 +85,13 @@ cdbm = cdbm["廚餘量"].resample("MS").asfreq()
 cdbm = cdbm.reset_index()
 cdbm["月"] = cdbm["日期"].dt.month
 cdbm_means = cdbm.groupby("月")["廚餘量"].mean()
-print(cdbm_means)
-st.subheader("Compost Data by Months 每月平均廚餘量")
+st.markdown("## Compost Data by Months 每月平均廚餘量")
 st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
 
 fig1, fig2 = st.columns(2)
 with fig1:
-    st.subheader("Raw data")
+    st.markdown("## Raw data")
     st.write(data)
 with fig2:
-    st.subheader("Cleaned data")
+    st.markdown("## Cleaned data")
     st.write(compost_data)
