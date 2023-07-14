@@ -6,10 +6,15 @@ import re
 # Dashboard setup
 pd.set_option("display.max_colwidth", None)
 st.set_page_config(
-    page_title="Taiwan Waste Management Data", page_icon="🗑️", layout="centered"
+    page_title="Taiwan Waste Management Data",
+    page_icon="🗑️",
+    layout="centered",
+    initial_sidebar_state="auto",
 )
+data_load_state = st.text("Loading data...")
 
 st.title("🚚 Taiwan Waste Management Data")
+st.markdown("# 全國一般廢棄物產生量")
 STAT_P_126_DATA = "data/stat_p_126.csv"
 STAT_P_126_METADATA = "data/STAT_P_126_Metadata.csv"
 
@@ -27,7 +32,6 @@ def extract_metadata(df: pd.DataFrame) -> str:
     return headers
 
 
-data_load_state = st.text("Loading data...")
 data = load_data(STAT_P_126_DATA)
 metadata = load_data(STAT_P_126_METADATA)
 metadata_headers = extract_metadata(metadata)
@@ -72,10 +76,12 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-data_description = metadata["資料集描述"].to_string(index=False, header=False)
-st.write(data_description)
+data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
+data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
+st.write(data_description_zh)
+st.write(data_description_en)
 compost_data = get_cleaned_compost_data(data)
-st.markdown("## Compost Data Over Time 廚餘量")
+st.markdown("## 廚餘量 Compost Data Over Time")
 st.line_chart(data=compost_data, x="日期", y="廚餘量")
 
 # compost data by months
@@ -85,7 +91,7 @@ cdbm = cdbm["廚餘量"].resample("MS").asfreq()
 cdbm = cdbm.reset_index()
 cdbm["月"] = cdbm["日期"].dt.month
 cdbm_means = cdbm.groupby("月")["廚餘量"].mean()
-st.markdown("## Compost Data by Months 每月平均廚餘量")
+st.markdown("## 每月平均廚餘量 Compost Data by Months")
 st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
 
 fig1, fig2 = st.columns(2)
