@@ -96,9 +96,21 @@ prev_avg_dwpp = avg_dwpp.loc[
     avg_dwpp["日期"] == prev_latest_date, "平均每人每日一般廢棄物產生量"
 ].values[0]
 
+# simulating live data by segmenting the data into yearly chunk
+segmented_data = cleaned_data.copy()
+segmented_data.sort_values(by="日期", ascending=True, inplace=True)
+num_years = 12
+partitioned = np.array_split(segmented_data, num_years)
+# print(partitioned[0].size)
+segments = [partitioned[0]]
 # simulating live data
-while True:
-    cleaned_data["總廚餘量"] = cleaned_data["廚餘量"] * np.random.choice(range(1, 5))
+for i in range(num_years - 1):
+    old_segments = segments[i]
+    new_segment = partitioned[i + 1]
+    segments.append(pd.concat([old_segments, new_segment]))
+
+for year in range(11):
+    segmented_data["總廚餘量"] = segments[year]["廚餘量"]
     time.sleep(1)
 
     with placeholder.container():
@@ -116,17 +128,12 @@ while True:
             delta=round(float(latest_avg_dwpp) - float(prev_avg_dwpp), ndigits=3),
         )
 
-        fig1, fig2 = st.columns(2)
         st.markdown("## 廚餘量 Compost Data Over Time")
         st.markdown("## ")
-        st.line_chart(data=cleaned_data, x="日期", y="總廚餘量")
-        # with fig1:
-        #     st.markdown("## 廚餘量 Compost Data Over Time")
-        #     st.markdown("## ")
-        #     st.line_chart(data=cleaned_data, x="日期", y="新廚餘量")
-        # with fig2:
-        #     st.markdown("## 每月平均廚餘量 Compost Data by Months")
-        #     st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
+        st.line_chart(data=segmented_data, x="日期", y="總廚餘量")
+
+        st.markdown("## 每月平均廚餘量 Compost Data by Months")
+        st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
         fig3, fig4 = st.columns(2)
         with fig3:
             st.markdown("## Raw data")
