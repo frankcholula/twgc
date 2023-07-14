@@ -12,7 +12,6 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="auto",
 )
-placeholder = st.empty()
 data_load_state = st.text("Loading data...")
 STAT_P_126_DATA = "data/stat_p_126.csv"
 STAT_P_126_METADATA = "data/STAT_P_126_Metadata.csv"
@@ -109,6 +108,9 @@ for i in range(num_years - 1):
     new_segment = partitioned[i + 1]
     segments.append(pd.concat([old_segments, new_segment]))
 
+LIVE_DATA = st.checkbox("LIVE DATA")
+placeholder = st.empty()
+
 for year in range(11):
     segmented_data["總廚餘量"] = segments[year]["廚餘量"]
     time.sleep(1)
@@ -131,7 +133,10 @@ for year in range(11):
 
         st.markdown("## 廚餘量 Compost Data Over Time")
         st.markdown("## ")
-        st.line_chart(data=segmented_data, x="日期", y="總廚餘量")
+        if LIVE_DATA:
+            st.line_chart(data=segmented_data, x="日期", y="總廚餘量")
+        else:
+            st.line_chart(data=cleaned_data, x="日期", y="廚餘量")
 
         st.markdown("## 每月平均廚餘量 Compost Data by Months")
         st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
