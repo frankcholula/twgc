@@ -18,15 +18,18 @@ def load_data(filepath: str, nrows=1000) -> pd.DataFrame:
     return data
 
 
+def extract_metadata(df: pd.DataFrame) -> str:
+    pattern = r"\(([\u4e00-\u9fff]+)\)"
+    headers = metadata["主要資料欄位"]
+    headers = headers.str.findall(pattern).tolist()[0]
+    return headers
+
+
 data_load_state = st.text("Loading data...")
 data = load_data(STAT_P_126_DATA)
 metadata = load_data(STAT_P_126_METADATA)
+metadata_headers = extract_metadata(metadata)
 data_load_state.text("Loading data...done!")
-
-fig1, fig2 = st.columns(2)
-with fig1:
-    st.subheader("Raw data")
-    st.write(data)
 
 
 def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
@@ -48,10 +51,15 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
             return None
 
     def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
-        pattern = r"\(([\u4e00-\u9fff]+)\)"
-        headers = metadata["主要資料欄位"]
-        headers = headers.str.findall(pattern).tolist()[0]
-        df.columns = headers
+        column_mapping = {
+            "item1": "統計期",
+            "value1": "總產生量",
+            "value2": "一般垃圾量",
+            "value3": "資源垃圾量",
+            "value4": "廚餘量",
+            "value5": "平均每人每日一般廢棄物產生量",
+        }
+        df = df.rename(columns=column_mapping)
         return df
 
     data = _rename_columns(data)
@@ -62,6 +70,15 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
+st.write((metadata["資料集描述"]).to_string(index=False, header=False))
+compost_data = get_cleaned_compost_data(data)
+st.subheader("Compost Data Over Time")
+st.line_chart(data=compost_data, x="日期", y="廚餘量")
+
+fig1, fig2 = st.columns(2)
+with fig1:
+    st.subheader("Raw data")
+    st.write(data)
 with fig2:
     st.subheader("Cleaned data")
-    st.write(get_cleaned_compost_data(data))
+    st.write(compost_data)
