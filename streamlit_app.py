@@ -11,10 +11,8 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="auto",
 )
+placeholder = st.empty()
 data_load_state = st.text("Loading data...")
-
-st.title("🚚 Taiwan Waste Management Data")
-st.markdown("# 全國一般廢棄物產生量")
 STAT_P_126_DATA = "data/stat_p_126.csv"
 STAT_P_126_METADATA = "data/STAT_P_126_Metadata.csv"
 
@@ -76,28 +74,54 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
-data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
-st.write(data_description_zh)
-st.write(data_description_en)
-compost_data = get_cleaned_compost_data(data)
-st.markdown("## 廚餘量 Compost Data Over Time")
-st.line_chart(data=compost_data, x="日期", y="廚餘量")
+cleaned_data = get_cleaned_compost_data(data)
 
 # compost data by months
-cdbm = compost_data.copy()
+cdbm = cleaned_data.copy()
 cdbm.set_index("日期", inplace=True)
 cdbm = cdbm["廚餘量"].resample("MS").asfreq()
 cdbm = cdbm.reset_index()
 cdbm["月"] = cdbm["日期"].dt.month
 cdbm_means = cdbm.groupby("月")["廚餘量"].mean()
-st.markdown("## 每月平均廚餘量 Compost Data by Months")
-st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
+avg_dwpp = cleaned_data.copy()
 
-fig1, fig2 = st.columns(2)
-with fig1:
-    st.markdown("## Raw data")
-    st.write(data)
-with fig2:
-    st.markdown("## Cleaned data")
-    st.write(compost_data)
+# getting average waste per person
+latest_date = avg_dwpp["日期"].max()
+prev_latest_date = avg_dwpp["日期"].nlargest(2).iloc[-1]
+latest_avg_dwpp = avg_dwpp.loc[avg_dwpp["日期"] == latest_date, "平均每人每日一般廢棄物產生量"].values[
+    0
+]
+prev_avg_dwpp = avg_dwpp.loc[
+    avg_dwpp["日期"] == prev_latest_date, "平均每人每日一般廢棄物產生量"
+].values[0]
+
+with placeholder.container():
+    st.title("🚚 Taiwan Waste Management Data")
+    st.markdown("# 全國一般廢棄物產生量")
+    data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
+    data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
+    st.write(data_description_zh)
+    st.write(data_description_en)
+    kpi1, kpi2, kpi3 = st.columns(3)
+
+    kpi1.metric(
+        label="每人每日一般廢棄物產生量(kg) 🗑️",
+        value=float(latest_avg_dwpp),
+        delta=round(float(latest_avg_dwpp) - float(prev_avg_dwpp), ndigits=3),
+    )
+
+    fig1, fig2 = st.columns(2)
+    with fig1:
+        st.markdown("## 廚餘量 Compost Data Over Time")
+        st.markdown("## ")
+        st.line_chart(data=cleaned_data, x="日期", y="廚餘量")
+    with fig2:
+        st.markdown("## 每月平均廚餘量 Compost Data by Months")
+        st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
+    fig3, fig4 = st.columns(2)
+    with fig3:
+        st.markdown("## Raw data")
+        st.write(data)
+    with fig4:
+        st.markdown("## Cleaned data")
+        st.write(cleaned_data)
