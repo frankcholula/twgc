@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="Taiwan Waste Management Data", page_icon="🗑️", layout="wide"
 )
 
-st.title("Taiwan Waste Management Data")
+st.title("🚚 Taiwan Waste Management Data")
 STAT_P_126_DATA = "data/stat_p_126.csv"
 STAT_P_126_METADATA = "data/STAT_P_126_Metadata.csv"
 
@@ -75,8 +75,19 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
 data_description = metadata["資料集描述"].to_string(index=False, header=False)
 st.write(data_description)
 compost_data = get_cleaned_compost_data(data)
-st.subheader("Compost Data Over Time 廚餘量 (mt 公噸)")
+st.subheader("Compost Data Over Time 廚餘量")
 st.line_chart(data=compost_data, x="日期", y="廚餘量")
+
+# compost data by months
+cdbm = compost_data.copy()
+cdbm.set_index("日期", inplace=True)
+cdbm = cdbm["廚餘量"].resample("MS").asfreq()
+cdbm = cdbm.reset_index()
+cdbm["月"] = cdbm["日期"].dt.month
+cdbm_means = cdbm.groupby("月")["廚餘量"].mean()
+print(cdbm_means)
+st.subheader("Compost Data by Months 每月平均廚餘量")
+st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
 
 fig1, fig2 = st.columns(2)
 with fig1:
