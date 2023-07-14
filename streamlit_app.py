@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import re
+import time
 
 # Dashboard setup
 pd.set_option("display.max_colwidth", None)
@@ -95,33 +96,41 @@ prev_avg_dwpp = avg_dwpp.loc[
     avg_dwpp["日期"] == prev_latest_date, "平均每人每日一般廢棄物產生量"
 ].values[0]
 
-with placeholder.container():
-    st.title("🚚 Taiwan Waste Management Data")
-    st.markdown("# 全國一般廢棄物產生量")
-    data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
-    data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
-    st.write(data_description_zh)
-    st.write(data_description_en)
-    kpi1, kpi2, kpi3 = st.columns(3)
+# simulating live data
+while True:
+    cleaned_data["總廚餘量"] = cleaned_data["廚餘量"] * np.random.choice(range(1, 5))
+    time.sleep(1)
 
-    kpi1.metric(
-        label="每人每日一般廢棄物產生量(kg) 🗑️",
-        value=float(latest_avg_dwpp),
-        delta=round(float(latest_avg_dwpp) - float(prev_avg_dwpp), ndigits=3),
-    )
+    with placeholder.container():
+        st.title("🚚 Taiwan Waste Management Data")
+        st.markdown("# 全國一般廢棄物產生量")
+        data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
+        data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
+        st.write(data_description_zh)
+        st.write(data_description_en)
+        kpi1, kpi2, kpi3 = st.columns(3)
 
-    fig1, fig2 = st.columns(2)
-    with fig1:
+        kpi1.metric(
+            label="每人每日一般廢棄物產生量(kg) 🗑️",
+            value=float(latest_avg_dwpp),
+            delta=round(float(latest_avg_dwpp) - float(prev_avg_dwpp), ndigits=3),
+        )
+
+        fig1, fig2 = st.columns(2)
         st.markdown("## 廚餘量 Compost Data Over Time")
         st.markdown("## ")
-        st.line_chart(data=cleaned_data, x="日期", y="廚餘量")
-    with fig2:
-        st.markdown("## 每月平均廚餘量 Compost Data by Months")
-        st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
-    fig3, fig4 = st.columns(2)
-    with fig3:
-        st.markdown("## Raw data")
-        st.write(data)
-    with fig4:
-        st.markdown("## Cleaned data")
-        st.write(cleaned_data)
+        st.line_chart(data=cleaned_data, x="日期", y="總廚餘量")
+        # with fig1:
+        #     st.markdown("## 廚餘量 Compost Data Over Time")
+        #     st.markdown("## ")
+        #     st.line_chart(data=cleaned_data, x="日期", y="新廚餘量")
+        # with fig2:
+        #     st.markdown("## 每月平均廚餘量 Compost Data by Months")
+        #     st.bar_chart(cdbm_means, x=cdbm_means.index.all(), y="廚餘量")
+        fig3, fig4 = st.columns(2)
+        with fig3:
+            st.markdown("## Raw data")
+            st.write(data)
+        with fig4:
+            st.markdown("## Cleaned data")
+            st.write(cleaned_data)
