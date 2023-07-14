@@ -116,10 +116,11 @@ for year in range(11):
     with placeholder.container():
         st.title("🚚 Taiwan Waste Management Data")
         st.markdown("# 全國一般廢棄物產生量")
-        data_description_zh = metadata["資料集描述"].to_string(index=False, header=False)
-        data_description_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
-        st.write(data_description_zh)
-        st.write(data_description_en)
+        desc_zh = metadata["資料集描述"].to_string(index=False, header=False)
+        desc_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
+        # maybe replace this with st.text_area
+        st.write(desc_zh)
+        st.write(desc_en)
         kpi1, kpi2, kpi3 = st.columns(3)
 
         kpi1.metric(
