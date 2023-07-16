@@ -12,9 +12,10 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="auto",
 )
-data_load_state = st.text("Loading data...")
-STAT_P_126_DATA = "data/stat_p_126.csv"
-STAT_P_126_METADATA = "data/STAT_P_126_Metadata.csv"
+
+DATA_DIR = "data/"
+STAT_P_126_DATA = DATA_DIR + "stat_p_126.csv"
+STAT_P_126_METADATA = DATA_DIR + "STAT_P_126_Metadata.csv"
 
 
 @st.cache_data(ttl=60)
@@ -30,6 +31,7 @@ def extract_metadata(df: pd.DataFrame) -> str:
     return headers
 
 
+data_load_state = st.text("Loading data...")
 data = load_data(STAT_P_126_DATA)
 metadata = load_data(STAT_P_126_METADATA)
 metadata_headers = extract_metadata(metadata)
@@ -37,24 +39,20 @@ data_load_state.text("Loading data...done!")
 
 
 def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
-    mask = data["item1"].apply(lambda chinese_date: "月" in chinese_date)
+    mask = data["item1"].str.contains("月")
     data = data[mask]
 
-    def _convert_date_regex(chinese_date):
-        # Extract the year and month from the Chinese date using regex
+    def convert_date_regex(chinese_date):
         match = re.match(r"(\d+)年\s*(\d*)月*", chinese_date)
-
         if match:
-            # The year is offset by 1911 because the original data is in the Republic of China calendar
             year = int(match.group(1)) + 1911
             month = match.group(2)
-            # Convert the year and month to a datetime object
             return pd.to_datetime(f"{year}-{int(month)}")
         else:
             print(f"Problematic input: {chinese_date}")
             return None
 
-    def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         column_mapping = {
             "item1": "統計期",
             "value1": "總產生量",
@@ -66,8 +64,8 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
         df = df.rename(columns=column_mapping)
         return df
 
-    data = _rename_columns(data)
-    data["日期"] = data["統計期"].apply(_convert_date_regex)
+    data = rename_columns(data)
+    data["日期"] = data["統計期"].apply(convert_date_regex)
     data = data.drop(columns=["統計期"])
     data["廚餘量"] = pd.to_numeric(data["廚餘量"], errors="coerce")
     data = data.dropna()
@@ -76,16 +74,16 @@ def get_cleaned_compost_data(data: pd.DataFrame) -> pd.DataFrame:
 
 cleaned_data = get_cleaned_compost_data(data)
 
-# compost data by months
+# Compost data by months
 cdbm = cleaned_data.copy()
 cdbm.set_index("日期", inplace=True)
 cdbm = cdbm["廚餘量"].resample("MS").asfreq()
 cdbm = cdbm.reset_index()
 cdbm["月"] = cdbm["日期"].dt.month
 cdbm_means = cdbm.groupby("月")["廚餘量"].mean()
-avg_dwpp = cleaned_data.copy()
 
-# getting average waste per person
+# Average waste per person
+avg_dwpp = cleaned_data.copy()
 latest_date = avg_dwpp["日期"].max()
 prev_latest_date = avg_dwpp["日期"].nlargest(2).iloc[-1]
 latest_avg_dwpp = avg_dwpp.loc[avg_dwpp["日期"] == latest_date, "平均每人每日一般廢棄物產生量"].values[
@@ -95,14 +93,12 @@ prev_avg_dwpp = avg_dwpp.loc[
     avg_dwpp["日期"] == prev_latest_date, "平均每人每日一般廢棄物產生量"
 ].values[0]
 
-# simulating live data by segmenting the data into yearly chunk
+# Simulating live data by segmenting the data into yearly chunks
 segmented_data = cleaned_data.copy()
 segmented_data.sort_values(by="日期", ascending=True, inplace=True)
 num_years = 12
 partitioned = np.array_split(segmented_data, num_years)
-# print(partitioned[0].size)
 segments = [partitioned[0]]
-# simulating live data
 for i in range(num_years - 1):
     old_segments = segments[i]
     new_segment = partitioned[i + 1]
@@ -120,7 +116,6 @@ for year in range(11):
         st.markdown("# 全國一般廢棄物產生量")
         desc_zh = metadata["資料集描述"].to_string(index=False, header=False)
         desc_en = "This dashboard consolidates comprehensive waste and recycling data from the Environmental Protection Administration of the Executive Yuan and local environmental protection agencies. It presents statistics on the generation of different waste types and provides insights into the average daily waste generated per person. The unit for the average daily waste per person is kilograms, while the remaining data is measured in metric tons."
-        # maybe replace this with st.text_area
         st.write(desc_zh)
         st.write(desc_en)
         kpi1, kpi2, kpi3 = st.columns(3)
